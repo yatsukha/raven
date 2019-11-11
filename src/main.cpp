@@ -34,7 +34,7 @@ void help();
 
 int main(int argc, char** argv) {
 
-    std::uint32_t num_polishing_rounds = 2;
+    std::uint32_t num_polishing_rounds = 0;
     std::uint32_t num_threads = 1;
 
     std::uint32_t cudapoa_batches = 0;
@@ -197,7 +197,7 @@ void help() {
         "\n"
         "    options:\n"
         "        -p, --polishing-rounds <int>\n"
-        "            default: 2\n"
+        "            default: 0\n"
         "            number of times racon is invoked\n"
         "        -t, --threads <int>\n"
         "            default: 1\n"

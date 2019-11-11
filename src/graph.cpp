@@ -355,9 +355,9 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
                 continue;
             }
             std::uint32_t type = overlap_type(overlaps[i][j]);
-            if (type == 1 && !piles_[overlaps[i][j].t_id]->has_chimeric_region()) {
+            if (type == 1 && !piles_[overlaps[i][j].t_id]->has_chimeric_region()) { // TODO (chimeric): comment out the second part of the if clause
                 piles_[i]->set_contained();
-            } else if (type == 2 && !piles_[i]->has_chimeric_region()) {
+            } else if (type == 2 && !piles_[i]->has_chimeric_region()) { // TODO (chimeric): comment out the second part of the if clause
                 piles_[overlaps[i][j].t_id]->set_contained();
             } else {
                 overlaps[i][k++] = overlaps[i][j];
@@ -375,6 +375,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
     logger.log("[raven::Graph::construct] removed contained sequences");
     logger.log();
 
+    // TODO (chimeric): comment out the whole while loop
     while (true) {
         auto components = connected_components();
         for (const auto& it: components) {
@@ -530,6 +531,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
         logger.log("[raven::Graph::construct] mapped valid sequences");
         logger.log();
 
+        // TODO (repeat)(optional): comment out the filter method and the for loop to save time
         // map invalid reads to valid reads
         minimizer_engine_->filter(0.00001);
         for (std::uint32_t k = s; k < sequences.size(); ++k) {
@@ -576,6 +578,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
 
     logger.log();
 
+    // TODO (repeat): comment out both for loops
     for (std::uint32_t i = 0; i < piles_.size(); ++i) {
         if (piles_[i]->is_contained()) {
             piles_[i]->set_invalid();
@@ -622,6 +625,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
     logger.log("[raven::Graph::construct] rearranged sequences");
     logger.log();
 
+    // TODO (repeat): comment out the whole while loop
     // annotate and resolve repetitive regions
     while (true) {
         auto components = connected_components();
@@ -784,7 +788,12 @@ void Graph::assemble(std::vector<std::unique_ptr<ram::Sequence>>& dst) {
     logger::Logger logger;
     logger.log();
 
+    // TODO (print): prints the assembly graph at the beginning
+    // print_csv("graph.csv");
+
     remove_transitive_edges();
+    // TODO (print): prints the assembly graph without transitive edges
+    // print_csv("graph_wo_tranitive_edges.csv");
 
     logger.log("[raven::Graph::assemble] removed transitive edges");
     logger.log();
@@ -797,6 +806,9 @@ void Graph::assemble(std::vector<std::unique_ptr<ram::Sequence>>& dst) {
         }
     }
 
+    // TODO (print): prints the assembly graph without bubbles and tips
+    // print_csv("graph_wo_bubbles_and_tips.csv");
+
     logger.log("[raven::Graph::assemble] removed tips and bubbles");
     logger.log();
 
@@ -806,6 +818,9 @@ void Graph::assemble(std::vector<std::unique_ptr<ram::Sequence>>& dst) {
         remove_long_edges();
         remove_tips();
     }
+
+    // TODO (print): prints the assembly graph without false edges
+    // print_csv("graph_wo_false_edges.csv");
 
     logger.log("[raven::Graph::assemble] removed long edges");
 
