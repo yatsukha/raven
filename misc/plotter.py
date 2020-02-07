@@ -27,6 +27,8 @@ class Plotter:
             "median" not in pile):
             eprint("[raven::Plotter::plot_pile] error: incomplete pile!")
             return
+        if (int(pile["median"]) < 10 or len(pile["data"]) < 300):
+            return
 
         figure, ax = matplotlib.pyplot.subplots(1, 1, figsize=(7.5, 5))
 
@@ -51,7 +53,7 @@ class Plotter:
         figure.text(0.5, 0.04, "base", ha="center")
         figure.text(0.04, 0.5, "coverage", va="center", rotation="vertical")
         matplotlib.pyplot.legend(loc="best")
-        matplotlib.pyplot.savefig(str(title) + ".pdf", format='pdf', dpi=1200)
+        matplotlib.pyplot.savefig(str(title) + ".png", format='png')
         matplotlib.pyplot.close(figure)
 
     def draw_assembly(self, title, component):
@@ -80,7 +82,7 @@ class Plotter:
         matplotlib.pyplot.xticks([])
         matplotlib.pyplot.yticks([])
         matplotlib.pyplot.axis('off')
-        matplotlib.pyplot.savefig(title + '.pdf', format='pdf', dpi=1200)
+        matplotlib.pyplot.savefig(title + '.png', format='png', dpi=1200)
 
     def run(self):
         try:

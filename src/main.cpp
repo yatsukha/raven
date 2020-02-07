@@ -24,6 +24,7 @@ static struct option options[] = {
     {"cuda-banded-alignment", no_argument, nullptr, 'b'},
     {"cuda-alignment-batches", required_argument, nullptr, 'a'},
 #endif
+    {"step", required_argument, nullptr, 's'},
     {"graphical-fragment-assembly", required_argument, nullptr, 'f'},
     {"threads", required_argument, nullptr, 't'},
     {"version", no_argument, nullptr, 'v'},
@@ -50,7 +51,9 @@ int main(int argc, char** argv) {
     std::uint32_t cuda_alignment_batches = 0;
     bool cuda_banded_alignment = false;
 
-    std::string optstring = "p:m:n:g:t:h";
+    std::uint32_t step = 0;
+
+    std::string optstring = "p:m:n:g:t:sh";
 #ifdef CUDA_ENABLED
     optstring += "c:b:a:";
 #endif
@@ -81,6 +84,7 @@ int main(int argc, char** argv) {
                 cuda_alignment_batches = atoi(optarg);
                 break;
 #endif
+            case 's': step = atoi(optarg); break;
             case 'f': gfa_path = optarg; break;
             case 't': num_threads = atoi(optarg); break;
             case 'v': std::cout << version << std::endl; return 0;
@@ -128,11 +132,8 @@ int main(int argc, char** argv) {
     }
 
     auto graph = raven::createGraph(thread_pool);
-    graph->construct(sequences);
-    graph->assemble();
-    graph->polish(sequences, m, n, g, cuda_poa_batches, cuda_banded_alignment,
-        cuda_alignment_batches, num_polishing_rounds);
-    graph->print_gfa(gfa_path);
+    graph->construct(sequences, step);
+    graph->assemble(step);
 
     std::vector<std::unique_ptr<ram::Sequence>> unitigs;
     graph->get_unitigs(unitigs);
@@ -188,18 +189,20 @@ void help() {
         "        containing sequences\n"
         "\n"
         "    options:\n"
-        "        -p, --polishing-rounds <int>\n"
-        "            default: 2\n"
-        "            number of times racon is invoked\n"
-        "        -m, --match <int>\n"
-        "            default: 3\n"
-        "            score for matching bases\n"
-        "        -n, --mismatch <int>\n"
-        "            default: -5\n"
-        "            score for mismatching bases\n"
-        "        -g, --gap <int>\n"
-        "            default: -4\n"
-        "            gap penalty (must be negative)\n"
+        "          --step <int>\n"
+        "              level of pre/post processing methods\n"
+//        "        -p, --polishing-rounds <int>\n"
+//        "            default: 2\n"
+//        "            number of times racon is invoked\n"
+//        "        -m, --match <int>\n"
+//        "            default: 3\n"
+//        "            score for matching bases\n"
+//        "        -n, --mismatch <int>\n"
+//        "            default: -5\n"
+//        "            score for mismatching bases\n"
+//        "        -g, --gap <int>\n"
+//        "            default: -4\n"
+//        "            gap penalty (must be negative)\n"
         "        --graphical-fragment-assembly <string>\n"
         "            prints the assemblg graph in GFA format\n"
         "        -t, --threads <int>\n"
@@ -208,14 +211,14 @@ void help() {
         "        --version\n"
         "            prints the version number\n"
         "        -h, --help\n"
-        "            prints the usage\n"
-        "    (only available when built with CUDA)\n"
-        "        -c, --cuda-poa-batches\n"
-        "            default: 1\n"
-        "            number of batches for CUDA accelerated polishing\n"
-        "        -b, --cuda-banded-alignment\n"
-        "            use banding approximation for polishing on GPU\n"
-        "            (only applicable when -c is used)\n"
-        "        -a, --cuda-alignment-batches\n"
-        "            number of batches for CUDA accelerated alignment\n";
+        "            prints the usage\n";
+//        "    (only available when built with CUDA)\n"
+//        "        -c, --cuda-poa-batches\n"
+//        "            default: 1\n"
+//        "            number of batches for CUDA accelerated polishing\n"
+//        "        -b, --cuda-banded-alignment\n"
+//        "            use banding approximation for polishing on GPU\n"
+//        "            (only applicable when -c is used)\n"
+//        "        -a, --cuda-alignment-batches\n"
+//        "            number of batches for CUDA accelerated alignment\n";
 }

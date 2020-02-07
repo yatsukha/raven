@@ -13,7 +13,7 @@
 #include "thread_pool/thread_pool.hpp"
 #include "logger/logger.hpp"
 #include "ram/ram.hpp"
-#include "racon/racon.hpp"
+// #include "racon/racon.hpp"
 
 #include "pile.hpp"
 #include "graph.hpp"
@@ -101,7 +101,7 @@ Graph::Graph(std::shared_ptr<thread_pool::ThreadPool> thread_pool)
 Graph::~Graph() {
 }
 
-void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
+void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences, std::uint32_t step) {
 
     if (sequences.empty()) {
         return;
@@ -333,7 +333,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
     for (std::uint32_t i = 0; i < piles_.size(); ++i) {
         thread_futures.emplace_back(thread_pool_->submit(
             [&] (std::uint32_t i) -> void {
-                piles_[i]->find_valid_region(4);
+                if (step > 0) piles_[i]->find_valid_region(4);
                 if (piles_[i]->is_invalid()) {
                     std::vector<ram::Overlap>().swap(overlaps[i]);
                 } else {
@@ -379,6 +379,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
     logger.log("[raven::Graph::construct] removed contained sequences");
     logger.log();
 
+if (step > 0) {
     while (true) {
         auto components = connected_components();
         for (const auto& it: components) {
@@ -440,6 +441,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
 
     logger.log("[raven::Graph::construct] removed chimeric sequences");
     logger.log();
+}
 
     // update piles with more sensitive overlaps
     for (std::uint32_t i = 0; i < piles_.size(); ++i) {
@@ -652,6 +654,10 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
             thread_futures.clear();
         }
 
+        if (step < 2) {
+            break;
+        }
+
         for (const auto& it: overlaps.back()) {
             piles_[it.q_id]->resolve_repetitive_regions(it);
             piles_[it.t_id]->resolve_repetitive_regions(it);
@@ -783,12 +789,16 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences) {
     logger.total("[raven::Graph::construct]");
 }
 
-void Graph::assemble() {
+void Graph::assemble(std::uint32_t step) {
 
     logger::Logger logger;
     logger.log();
 
+    print_gfa("construction.gfa");
+
     remove_transitive_edges();
+
+    print_gfa("transitive.gfa");
 
     logger.log("[raven::Graph::assemble] removed transitive edges");
     logger.log();
@@ -801,15 +811,24 @@ void Graph::assemble() {
         }
     }
 
+    print_gfa("bubbles.gfa");
+
     logger.log("[raven::Graph::assemble] removed tips and bubbles");
     logger.log();
 
     create_unitigs(42);
-    for (std::uint32_t i = 0; i < 16; ++i) {
-        create_force_directed_layout();
+    print_json("piles.json");
+
+    print_gfa("unitigs.gfa");
+
+if (step > 0) {
+    for (std::uint32_t i = 0; i < 1; ++i) {
+        create_force_directed_layout(i == 0 ? "layout.json" : "");
         remove_long_edges();
         remove_tips();
     }
+}
+
     create_unitigs();
 
     logger.log("[raven::Graph::assemble] removed long edges");
@@ -821,6 +840,8 @@ void Graph::assemble() {
             break;
         }
     }
+
+    print_gfa("final.gfa");
 
     logger.total("[raven::Graph::assemble]");
 }
@@ -1565,6 +1586,7 @@ void Graph::polish(const std::vector<std::unique_ptr<ram::Sequence>>& sequences,
         q /= sequences.size();
     }
 
+    /*
     auto polisher = racon::createPolisher(q, 0.3, 500, true, match, mismatch,
         gap, thread_pool_, cuda_poa_batches, cuda_banded_alignment,
         cuda_alignment_batches);
@@ -1605,6 +1627,7 @@ void Graph::polish(const std::vector<std::unique_ptr<ram::Sequence>>& sequences,
         it->data = unitigs[unitig_id++]->data;
         it->pair->data = reverse_complement(it->data);
     }
+    */
 }
 
 std::uint32_t Graph::create_unitigs(std::uint32_t epsilon) {
@@ -1947,15 +1970,15 @@ void Graph::print_json(const std::string& path) const {
     os << "{\"piles\":{";
     bool is_first = true;
 
-    for (const auto& it: piles_) {
-        if (it->is_invalid()) {
+    for (const auto& it: nodes_) { //piles_) {
+        if (it == nullptr || it->is_rc() || it->sequences.size() > 1) { //is_invalid()) {
             continue;
         }
         if (!is_first) {
             os << ",";
         }
         is_first = false;
-        os << it->to_json();
+        os << piles_[it->sequences[0]]->to_json();//it->to_json();
     }
 
     os << "}}";

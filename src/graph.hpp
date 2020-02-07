@@ -38,13 +38,13 @@ public:
      * removing contained sequences and removing overlaps between repetitive
      * sequences.
      */
-    void construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences);
+    void construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences, std::uint32_t step);
 
     /*!
      * @brief Simplify the assembly graph via transitive reduction, tip
      * pruning and popping bubble-like structures.
      */
-    void assemble();
+    void assemble(std::uint32_t step);
 
     /*!
      * @brief Removes transitive edge (inspired by Myers 1995 & 2005).
