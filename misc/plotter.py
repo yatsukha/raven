@@ -82,7 +82,7 @@ class Plotter:
         matplotlib.pyplot.xticks([])
         matplotlib.pyplot.yticks([])
         matplotlib.pyplot.axis('off')
-        matplotlib.pyplot.savefig(title + '.png', format='png', dpi=1200)
+        matplotlib.pyplot.savefig(title + '.png', format='png')
 
     def run(self):
         try:
