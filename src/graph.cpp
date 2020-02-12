@@ -244,7 +244,7 @@ void Graph::construct(std::vector<std::unique_ptr<ram::Sequence>>& sequences, st
 
     for (std::uint32_t i = 0, j = 0, bytes = 0; i < sequences.size(); ++i) {
         bytes += sequences[i]->data.size();
-        if (i != sequences.size() - 1 && bytes < (1U << 30)) {
+        if (i != sequences.size() - 1 && bytes < (1U << 25)) {
             continue;
         }
         bytes = 0;
