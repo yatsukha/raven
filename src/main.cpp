@@ -136,10 +136,12 @@ int main(int argc, char** argv) {
 
     std::vector<std::unique_ptr<ram::Sequence>> unitigs;
     graph->get_unitigs(unitigs);
+    std::cerr << "[raven::] extracted unitigs" << std::endl;
     for (const auto& it: unitigs) {
         std::cout << ">" << it->name << std::endl;
         std::cout << it->data << std::endl;
     }
+    std::cerr << "[raven::] all done" << std::endl;
 
     logger.log("[raven::]");
 

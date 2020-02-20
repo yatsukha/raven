@@ -1565,18 +1565,27 @@ void Graph::polish(const std::vector<std::unique_ptr<ram::Sequence>>& sequences,
         q /= sequences.size();
     }
 
+    std::cerr << "[raven::Graph::polish] average quality = " << q << std::endl;
+
     auto polisher = racon::createPolisher(q, 0.3, 500, true, match, mismatch,
         gap, thread_pool_, cuda_poa_batches, cuda_banded_alignment,
         cuda_alignment_batches);
 
+    std::cerr << "[raven::Graph::polish] created polisher" << std::endl;
+
     std::vector<std::unique_ptr<ram::Sequence>> unitigs;
     get_unitigs(unitigs);
+
+    std::cerr << "[raven::Graph::polish] extracted unitigs" << std::endl;
 
     for (std::uint32_t i = 0; i < num_rounds; ++i) {
         std::vector<std::unique_ptr<ram::Sequence>> polished;
         polisher->initialize(unitigs, sequences);
+        std::cerr << "[raven::Graph::polish] created windows" << std::endl;
         polisher->polish(polished, true);
+        std::cerr << "[raven::Graph::polish] polished windows" << std::endl;
         unitigs.swap(polished);
+        std::cerr << "[raven::Graph::polish] finalized round" << std::endl;
     }
 
     auto reverse_complement = [] (const std::string& src) -> std::string {
@@ -1605,6 +1614,8 @@ void Graph::polish(const std::vector<std::unique_ptr<ram::Sequence>>& sequences,
         it->data = unitigs[unitig_id++]->data;
         it->pair->data = reverse_complement(it->data);
     }
+
+    std::cerr << "[raven::Graph::polish] stored polished unitigs" << std::endl;
 }
 
 std::uint32_t Graph::create_unitigs(std::uint32_t epsilon) {
@@ -2007,6 +2018,8 @@ void Graph::print_gfa(const std::string& path) const {
         return;
     }
 
+    std::cerr << "[raven::Graph::print_gfa] printing gfa" << std::endl;
+
     std::ofstream os(path);
     for (const auto& it: nodes_) {
         if (it == nullptr || it->is_rc() || (it->sequences.size() < 2 &&
@@ -2025,6 +2038,8 @@ void Graph::print_gfa(const std::string& path) const {
            << "\t" << it->begin->data.size() - it->length << 'M' << std::endl;
     }
     os.close();
+
+    std::cerr << "[raven::Graph::print_gfa] done" << std::endl;
 }
 
 Graph::Node::Node(std::uint32_t id, std::uint32_t sequence, const std::string& name,
