@@ -24,7 +24,8 @@ include_directories(vendor/cereal/include)
 add_executable(${PROJECT_NAME}
   src/graph.cpp
   src/main.cpp
-  src/pile.cpp)
+  src/pile.cpp
+  src/diploid.cpp)
 target_link_libraries(${PROJECT_NAME} bioparser racon)
 target_compile_definitions(${PROJECT_NAME}
   PRIVATE RAVEN_VERSION="v${PROJECT_VERSION}")

@@ -9,6 +9,7 @@
 #include "biosoup/timer.hpp"
 
 #include "graph.hpp"
+#include "diploid.hpp"
 
 std::atomic<std::uint32_t> biosoup::Sequence::num_objects{0};
 
@@ -17,6 +18,7 @@ namespace {
 const char* raven_version = RAVEN_VERSION;
 
 static struct option options[] = {
+  {"diploid", no_argument, nullptr, 'd'},
   {"polishing-rounds", required_argument, nullptr, 'p'},
   {"match", required_argument, nullptr, 'm'},
   {"mismatch", required_argument, nullptr, 'n'},
@@ -101,6 +103,9 @@ void Help() {
 #endif
       "    --graphical-fragment-assembly <string>\n"
       "      prints the assemblg graph in GFA format\n"
+      "    -d, --diploid\n"
+      "      partitions fragments into two haplotype sets,\n"
+      "      and assembles each set separately\n"
       "    --resume\n"
       "      resume previous run from last checkpoint\n"
       "    -t, --threads <int>\n"
@@ -109,7 +114,7 @@ void Help() {
       "    --version\n"
       "      prints the version number\n"
       "    -h, --help\n"
-      "       prints the usage\n";
+      "      prints the usage\n";
 }
 
 }  // namespace
@@ -128,8 +133,10 @@ int main(int argc, char** argv) {
   std::uint32_t cuda_poa_batches = 0;
   std::uint32_t cuda_alignment_batches = 0;
   bool cuda_banded_alignment = false;
+  
+  bool diploid = false;
 
-  std::string optstr = "p:m:n:g:t:h";
+  std::string optstr = "dp:m:n:g:t:h";
 #ifdef CUDA_ENABLED
   optstr += "c:b:a:";
 #endif
@@ -160,6 +167,7 @@ int main(int argc, char** argv) {
         break;
 #endif
       case 'f': gfa_path = optarg; break;
+      case 'd': diploid = true; break;
       case 'r': resume = true; break;
       case 't': num_threads = atoi(optarg); break;
       case 'v': std::cout << raven_version << std::endl; return 0;
@@ -225,7 +233,16 @@ int main(int argc, char** argv) {
 
     timer.Start();
   }
+  
+  if (diploid) {
+    ::std::cerr << "[raven::] starting diploid partitioning" << "\n";
+    ::raven::Partition(sequences, thread_pool);
+    return 0;
+  }
 
+  // TODO: separate this step into two separate ones
+  // TODO: possibly means separating gfa output file
+  //       and adding two output file parameters for regular output
   graph.Construct(sequences);
   graph.Assemble();
   graph.Polish(sequences, m, n, g, cuda_poa_batches, cuda_banded_alignment,
