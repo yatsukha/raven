@@ -1,9 +1,11 @@
 #include "diploid.hpp"
 
+#include "mfr.hpp"
 #include "spoa/spoa.hpp"
 #include "biosoup/progress_bar.hpp"
 
 #include <iostream>
+#include <algorithm>
 #include <future>
 #include <string>
 #include <tuple>
@@ -11,6 +13,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include <random>
 
 namespace raven {
   
@@ -61,150 +64,6 @@ PercentageInfo ComputePercentages(::std::vector<::std::uint_fast32_t> const& v) 
   return pi;
 }
   
-using Node       = ::std::uint_fast32_t;
-using Neighbours = ::std::unordered_set<Node>;
-using Removed    = ::std::unordered_set<Node>;
-using Graph      = ::std::unordered_map<Node, Neighbours>;
-using Cycle      = ::std::vector<Node>;
-
-class NullOpt {};
-
-template<typename T>
-class Optional {
-  ::std::shared_ptr<T> data_;
-  
- public:
-  Optional() = default;
-  Optional(NullOpt&&) {};
-  
-  Optional(T const& data): data_(new (new char[sizeof(T)]) T{data}) {}
-  Optional(T&& data): data_(new (new char[sizeof(T)]) T{::std::forward<T>(data)}) {}
-  
-  Optional(Optional const&) = default;
-  Optional& operator=(Optional const&) = default;
-  
-  Optional(Optional&&) = default;
-  Optional& operator=(Optional&&) = default;
-  
-  operator bool() const noexcept {
-    return data_.operator bool();
-  }
-  
-  T const& operator*() const noexcept {
-    return *data_;  
-  }
-};
-
-using VisitedDephts =
-  ::std::unordered_map<
-    Node,
-    ::std::pair<Node, Optional<Node>>>;
-using OptionalCycle = Optional<Cycle>;
-
-Cycle merge(Cycle const& u, Cycle const& v) {
-  return u.size() < v.size() ? Cycle{v.rbegin() + u.size(), v.rend()}
-                             : Cycle{u.rbegin() + v.size(), u.rend()};
-}
-
-OptionalCycle OddCycleImpl(Graph const& g, VisitedDephts& v, Removed const& r,
-                           Optional<Node> p = NullOpt{}, Node c = 0u,
-                           ::std::uint_fast32_t d = 0u) {
-  if (r.count(c)) {
-    return {};
-  }
-  
-  v[c] = {d++, p};
-  
-  for (auto&& nb : g.find(c)->second) {
-    auto iter = v.find(nb);
-    if (iter != v.end()) {
-      if ((d - iter->second.first) % 2) {
-        auto cycle_from = [&v](Optional<Node> const& opt_node, decltype(d) const& depth) {
-          Cycle cc;
-          cc.reserve(depth);
-          auto jumper = opt_node;
-          while (jumper) {
-            cc.push_back(*jumper);
-            jumper = v[*jumper].second;
-          }
-          return cc;
-        };
-        
-        auto a = cycle_from(decltype(p){c}, d);
-        auto b = cycle_from(iter->second.second, iter->second.first);
-        return merge(a, b);
-      }
-    } else {
-      auto ret = OddCycleImpl(g, v, r, c, nb, d);
-      if (ret) {
-        return ret;
-      }
-    }
-  }
-  
-  return {};
-}
-
-OptionalCycle OddCycle(Graph const& g, Removed const& r = {}) {
-  VisitedDephts v;
-  for (auto&& pair : g) {
-    if (!r.count(pair.first) && !v.count(pair.first)) {
-      auto ret = OddCycleImpl(g, v, r, {}, pair.first);
-      if (ret) {
-        return ret;
-      }
-    }
-  }
-  return {};
-}
-
-::std::size_t Optima(Graph const& g, Removed const& r,
-                     ::std::size_t b =
-                       ::std::numeric_limits<::std::size_t>::max()) {
-  if (r.size() >= b) {
-    return ::std::numeric_limits<decltype(b)>::max();
-  } else {
-    auto cycle_opt = OddCycle(g, r);
-    if (cycle_opt) {
-      auto n = b;
-      auto r_copy = r;
-      for (auto&& node : *cycle_opt) {
-        auto loc = r_copy.insert(node).first;
-        n = ::std::min(n, Optima(g, r_copy, b));
-        r_copy.erase(loc);
-      } 
-      return n;  
-    }
-    return r.size();
-  }
-}
-
-Graph& FragmentIntersection(Graph& g) {
-    ::biosoup::ProgressBar bar{
-      static_cast<::std::uint32_t>(g.size()), 80ul};
-    ::std::cerr << "[raven::diploid::FragmentIntersection] finding maximum fragment set"
-                << "\t" << "[" << bar << "]";
-    Removed d;
-    auto s = Optima(g, {});
-    for (auto&& pair : g) {
-      if (Optima(g, {pair.first}) == s) {
-        d.insert(pair.first);
-      }
-      if (++bar) {
-        ::std::cerr << "\r\t" << "[" << bar << "]";
-      }
-    }
-    
-    for (auto&& node : d) {
-      for (auto&& nb : g[node]) {
-        g[nb].erase(g[nb].find(node));
-      }
-      g.erase(g.find(node));
-    }
-      
-    return g;
-}
-
 }  // namespace detail
 
 DiploidSequences Partition(
@@ -285,7 +144,7 @@ DiploidSequences Partition(
   
   ::std::cerr << "[raven::Diploid::Partition] built SNP matrix" << "\n";
   
-  detail::Graph conflict_graph;
+  Graph conflict_graph;
   
   ::biosoup::ProgressBar graph_bar{
     static_cast<::std::uint32_t>(snp_m.size()), 80ul};
@@ -319,7 +178,7 @@ DiploidSequences Partition(
   snp_m.shrink_to_fit();
   
   auto old     = conflict_graph.size();
-  auto reduced = detail::FragmentIntersection(conflict_graph).size();
+  auto reduced = FragmentIntersection(conflict_graph).size();
   
   ::std::cerr << "\n" << "Regular graph size: " << old
               << ", reduced: " << reduced
