@@ -7,9 +7,8 @@
 #include "bioparser/fasta_parser.hpp"
 #include "bioparser/fastq_parser.hpp"
 #include "biosoup/timer.hpp"
-
-#include "graph.hpp"
 #include "diploid.hpp"
+#include "graph.hpp"
 
 std::atomic<std::uint32_t> biosoup::Sequence::num_objects{0};
 
@@ -18,44 +17,46 @@ namespace {
 const char* raven_version = RAVEN_VERSION;
 
 static struct option options[] = {
-  {"diploid", no_argument, nullptr, 'd'},
-  {"polishing-rounds", required_argument, nullptr, 'p'},
-  {"match", required_argument, nullptr, 'm'},
-  {"mismatch", required_argument, nullptr, 'n'},
-  {"gap", required_argument, nullptr, 'g'},
+    {"diploid", no_argument, nullptr, 'd'},
+    {"polishing-rounds", required_argument, nullptr, 'p'},
+    {"match", required_argument, nullptr, 'm'},
+    {"mismatch", required_argument, nullptr, 'n'},
+    {"gap", required_argument, nullptr, 'g'},
 #ifdef CUDA_ENABLED
-  {"cuda-poa-batches", optional_argument, nullptr, 'c'},
-  {"cuda-banded-alignment", no_argument, nullptr, 'b'},
-  {"cuda-alignment-batches", required_argument, nullptr, 'a'},
+    {"cuda-poa-batches", optional_argument, nullptr, 'c'},
+    {"cuda-banded-alignment", no_argument, nullptr, 'b'},
+    {"cuda-alignment-batches", required_argument, nullptr, 'a'},
 #endif
-  {"graphical-fragment-assembly", required_argument, nullptr, 'f'},
-  {"resume", no_argument, nullptr, 'r'},
-  {"threads", required_argument, nullptr, 't'},
-  {"version", no_argument, nullptr, 'v'},
-  {"help", no_argument, nullptr, 'h'},
-  {nullptr, 0, nullptr, 0}
-};
+    {"graphical-fragment-assembly", required_argument, nullptr, 'f'},
+    {"resume", no_argument, nullptr, 'r'},
+    {"threads", required_argument, nullptr, 't'},
+    {"version", no_argument, nullptr, 'v'},
+    {"help", no_argument, nullptr, 'h'},
+    {nullptr, 0, nullptr, 0}};
 
 std::unique_ptr<bioparser::Parser<biosoup::Sequence>> CreateParser(
     const std::string& path) {
-  auto is_suffix = [] (const std::string& s, const std::string& suff) {
-    return s.size() < suff.size() ? false :
-        s.compare(s.size() - suff.size(), suff.size(), suff) == 0;
+  auto is_suffix = [](const std::string& s, const std::string& suff) {
+    return s.size() < suff.size()
+               ? false
+               : s.compare(s.size() - suff.size(), suff.size(), suff) == 0;
   };
 
-  if (is_suffix(path, ".fasta")    || is_suffix(path, ".fa") ||
+  if (is_suffix(path, ".fasta") || is_suffix(path, ".fa") ||
       is_suffix(path, ".fasta.gz") || is_suffix(path, ".fa.gz")) {
     try {
-      return bioparser::Parser<biosoup::Sequence>::Create<bioparser::FastaParser>(path);  // NOLINT
+      return bioparser::Parser<biosoup::Sequence>::Create<
+          bioparser::FastaParser>(path);  // NOLINT
     } catch (const std::invalid_argument& exception) {
       std::cerr << exception.what() << std::endl;
       return nullptr;
     }
   }
-  if (is_suffix(path, ".fastq")    || is_suffix(path, ".fq") ||
+  if (is_suffix(path, ".fastq") || is_suffix(path, ".fq") ||
       is_suffix(path, ".fastq.gz") || is_suffix(path, ".fq.gz")) {
     try {
-      return bioparser::Parser<biosoup::Sequence>::Create<bioparser::FastqParser>(path);  // NOLINT
+      return bioparser::Parser<biosoup::Sequence>::Create<
+          bioparser::FastqParser>(path);  // NOLINT
     } catch (const std::invalid_argument& exception) {
       std::cerr << exception.what() << std::endl;
       return nullptr;
@@ -70,51 +71,51 @@ std::unique_ptr<bioparser::Parser<biosoup::Sequence>> CreateParser(
 }
 
 void Help() {
-  std::cout <<
-      "usage: raven [options ...] <sequences>\n"
-      "\n"
-      "  # default output is stdout\n"
-      "  <sequences>\n"
-      "    input file in FASTA/FASTQ format (can be compressed with gzip)\n"
-      "\n"
-      "  options:\n"
-      "    -p, --polishing-rounds <int>\n"
-      "      default: 2\n"
-      "      number of times racon is invoked\n"
-      "    -m, --match <int>\n"
-      "      default: 3\n"
-      "      score for matching bases\n"
-      "    -n, --mismatch <int>\n"
-      "      default: -5\n"
-      "      score for mismatching bases\n"
-      "    -g, --gap <int>\n"
-      "      default: -4\n"
-      "      gap penalty (must be negative)\n"
+  std::cout
+      << "usage: raven [options ...] <sequences>\n"
+         "\n"
+         "  # default output is stdout\n"
+         "  <sequences>\n"
+         "    input file in FASTA/FASTQ format (can be compressed with gzip)\n"
+         "\n"
+         "  options:\n"
+         "    -p, --polishing-rounds <int>\n"
+         "      default: 2\n"
+         "      number of times racon is invoked\n"
+         "    -m, --match <int>\n"
+         "      default: 3\n"
+         "      score for matching bases\n"
+         "    -n, --mismatch <int>\n"
+         "      default: -5\n"
+         "      score for mismatching bases\n"
+         "    -g, --gap <int>\n"
+         "      default: -4\n"
+         "      gap penalty (must be negative)\n"
 #ifdef CUDA_ENABLED
-      "    -c, --cuda-poa-batches <int>\n"
-      "       default: 0\n"
-      "       number of batches for CUDA accelerated polishing\n"
-      "    -b, --cuda-banded-alignment\n"
-      "       use banding approximation for polishing on GPU\n"
-      "       (only applicable when -c is used)\n"
-      "    -a, --cuda-alignment-batches <int>\n"
-      "       default: 0\n"
-      "       number of batches for CUDA accelerated alignment\n"
+         "    -c, --cuda-poa-batches <int>\n"
+         "       default: 0\n"
+         "       number of batches for CUDA accelerated polishing\n"
+         "    -b, --cuda-banded-alignment\n"
+         "       use banding approximation for polishing on GPU\n"
+         "       (only applicable when -c is used)\n"
+         "    -a, --cuda-alignment-batches <int>\n"
+         "       default: 0\n"
+         "       number of batches for CUDA accelerated alignment\n"
 #endif
-      "    --graphical-fragment-assembly <string>\n"
-      "      prints the assemblg graph in GFA format\n"
-      "    -d, --diploid\n"
-      "      partitions fragments into two haplotype sets,\n"
-      "      and assembles each set separately\n"
-      "    --resume\n"
-      "      resume previous run from last checkpoint\n"
-      "    -t, --threads <int>\n"
-      "      default: 1\n"
-      "      number of threads\n"
-      "    --version\n"
-      "      prints the version number\n"
-      "    -h, --help\n"
-      "      prints the usage\n";
+         "    --graphical-fragment-assembly <string>\n"
+         "      prints the assemblg graph in GFA format\n"
+         "    -d, --diploid\n"
+         "      partitions fragments into two haplotype sets,\n"
+         "      and assembles each set separately\n"
+         "    --resume\n"
+         "      resume previous run from last checkpoint\n"
+         "    -t, --threads <int>\n"
+         "      default: 1\n"
+         "      number of threads\n"
+         "    --version\n"
+         "      prints the version number\n"
+         "    -h, --help\n"
+         "      prints the usage\n";
 }
 
 }  // namespace
@@ -133,7 +134,7 @@ int main(int argc, char** argv) {
   std::uint32_t cuda_poa_batches = 0;
   std::uint32_t cuda_alignment_batches = 0;
   bool cuda_banded_alignment = false;
-  
+
   bool diploid = false;
 
   std::string optstr = "dp:m:n:g:t:h";
@@ -141,12 +142,21 @@ int main(int argc, char** argv) {
   optstr += "c:b:a:";
 #endif
   int arg;
-  while ((arg = getopt_long(argc, argv, optstr.c_str(), options, nullptr)) != -1) {  // NOLINT
+  while ((arg = getopt_long(argc, argv, optstr.c_str(), options, nullptr)) !=
+         -1) {  // NOLINT
     switch (arg) {
-      case 'p': num_polishing_rounds = atoi(optarg); break;
-      case 'm': m = atoi(optarg); break;
-      case 'n': n = atoi(optarg); break;
-      case 'g': g = atoi(optarg); break;
+      case 'p':
+        num_polishing_rounds = atoi(optarg);
+        break;
+      case 'm':
+        m = atoi(optarg);
+        break;
+      case 'n':
+        n = atoi(optarg);
+        break;
+      case 'g':
+        g = atoi(optarg);
+        break;
 #ifdef CUDA_ENABLED
       case 'c':
         cuda_poa_batches = 1;
@@ -166,13 +176,26 @@ int main(int argc, char** argv) {
         cuda_alignment_batches = atoi(optarg);
         break;
 #endif
-      case 'f': gfa_path = optarg; break;
-      case 'd': diploid = true; break;
-      case 'r': resume = true; break;
-      case 't': num_threads = atoi(optarg); break;
-      case 'v': std::cout << raven_version << std::endl; return 0;
-      case 'h': Help(); return 0;
-      default: return 1;
+      case 'f':
+        gfa_path = optarg;
+        break;
+      case 'd':
+        diploid = true;
+        break;
+      case 'r':
+        resume = true;
+        break;
+      case 't':
+        num_threads = atoi(optarg);
+        break;
+      case 'v':
+        std::cout << raven_version << std::endl;
+        return 0;
+      case 'h':
+        Help();
+        return 0;
+      default:
+        return 1;
     }
   }
 
@@ -205,9 +228,8 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    std::cerr << "[raven::] loaded previous run "
-              << std::fixed << timer.Stop() << "s"
-              << std::endl;
+    std::cerr << "[raven::] loaded previous run " << std::fixed << timer.Stop()
+              << "s" << std::endl;
 
     timer.Start();
   }
@@ -228,15 +250,15 @@ int main(int argc, char** argv) {
     }
 
     std::cerr << "[raven::] loaded " << sequences.size() << " sequences "
-              << std::fixed << timer.Stop() << "s"
-              << std::endl;
+              << std::fixed << timer.Stop() << "s" << std::endl;
 
     timer.Start();
   }
-  
+
   if (diploid) {
-    ::std::cerr << "[raven::] starting diploid partitioning" << "\n";
-    ::raven::Partition(sequences, thread_pool);
+    ::std::cerr << "[raven::] starting diploid partitioning"
+                << "\n";
+    ::raven::diploid::Partition(sequences, thread_pool);
     return 0;
   }
 
@@ -246,7 +268,7 @@ int main(int argc, char** argv) {
   graph.Construct(sequences);
   graph.Assemble();
   graph.Polish(sequences, m, n, g, cuda_poa_batches, cuda_banded_alignment,
-      cuda_alignment_batches, num_polishing_rounds);
+               cuda_alignment_batches, num_polishing_rounds);
   graph.PrintGFA(gfa_path);
 
   for (const auto& it : graph.GetUnitigs(num_polishing_rounds > 0)) {
