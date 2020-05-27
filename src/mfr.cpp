@@ -156,9 +156,10 @@ ConflictGraph& FragmentIntersection(ConflictGraph& cg) {
 
   auto s = Optima(cg, tmp, mem, z, 0);
 
-  ::std::cerr
-      << "[raven::diploid::FragmentIntersection] calculated an optimal solution"
-      << "\n";
+  ::std::cerr << "[raven::diploid::FragmentIntersection] calculated an optimal "
+                 "solution of "
+              << s << " removed vertices"
+              << "\n";
 
   ::biosoup::ProgressBar bar{static_cast<::std::uint32_t>(g.size()), 80u};
   ::std::cerr << "[raven::diploid::FragmentIntersection] calculating optimal "
@@ -182,9 +183,9 @@ ConflictGraph& FragmentIntersection(ConflictGraph& cg) {
 
   ::std::cerr << "\n";
 
-  for (auto&& node : d) {
-    cg.remove(node);
-  }
+  ::std::for_each(
+      d.begin(), d.end(),
+      ::std::bind(&ConflictGraph::remove, &cg, ::std::placeholders::_1));
 
   return cg;
 }
