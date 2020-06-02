@@ -21,7 +21,8 @@ using DiploidSequences =
 
 DiploidSequences Partition(
     ::std::vector<::std::unique_ptr<::biosoup::Sequence>> const& sequences,
-    ::std::shared_ptr<::thread_pool::ThreadPool> thread_pool);
+    ::std::shared_ptr<::thread_pool::ThreadPool> thread_pool,
+    ::std::int8_t const m, ::std::int8_t const n, ::std::int8_t const g);
 
 }  // namespace diploid
 

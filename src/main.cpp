@@ -103,7 +103,7 @@ void Help() {
          "       number of batches for CUDA accelerated alignment\n"
 #endif
          "    --graphical-fragment-assembly <string>\n"
-         "      prints the assemblg graph in GFA format\n"
+         "      prints the assembly graph in GFA format\n"
          "    -d, --diploid\n"
          "      partitions fragments into two haplotype sets,\n"
          "      and assembles each set separately\n"
@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
   if (diploid) {
     ::std::cerr << "[raven::] starting diploid partitioning"
                 << "\n";
-    ::raven::diploid::Partition(sequences, thread_pool);
+    ::raven::diploid::Partition(sequences, thread_pool, m, n, g);
     return 0;
   }
 

@@ -78,9 +78,10 @@ PercentageInfo ComputePercentages(
 
 DiploidSequences Partition(
     ::std::vector<::std::unique_ptr<::biosoup::Sequence>> const& sequences,
-    ::std::shared_ptr<::thread_pool::ThreadPool>) {
+    ::std::shared_ptr<::thread_pool::ThreadPool> thread_pool,
+    ::std::int8_t const m, ::std::int8_t const n, ::std::int8_t const g) {
   auto alignment_engine = ::spoa::createAlignmentEngine(
-      static_cast<::spoa::AlignmentType>(0), 5, -4, -8);
+      static_cast<::spoa::AlignmentType>(0), m, n, g);
 
   auto graph = ::spoa::createGraph();
   ::biosoup::ProgressBar bar{static_cast<::std::uint32_t>(sequences.size()),
@@ -90,13 +91,12 @@ DiploidSequences Partition(
               << "[" << bar << "]";
 
   for (auto&& s : sequences) {
+    graph->add_alignment(alignment_engine->align(s->data, graph), s->data);
     if (++bar) {
       ::std::cerr << "\r"
                   << "[raven::diploid::Partition] aligning sequences "
                   << "[" << bar << "]";
     }
-
-    graph->add_alignment(alignment_engine->align(s->data, graph), s->data);
   }
 
   ::std::vector<::std::string> msa;
@@ -137,15 +137,16 @@ DiploidSequences Partition(
     }
 
     for (decltype(i) j = 0; j < msa.size(); ++j) {
-      snp_m[j].push_back(msa[j][i] == info.primary
-                             ? 1
-                             : (msa[j][i] == info.secondary ? -1 : 0));
+      auto n = msa[j][i] == info.primary
+                   ? 1
+                   : (msa[j][i] == info.secondary ? -1 : 0);
 
-      /*if (snp_m[j].back() != 2) {
-        ::std::cerr << "[raven::Diploid::Partition] snip on " << j << " at "
-                    << i << " -> " << snp_m[j].back()
-                    << "\n";
-      }*/
+      snp_m[j].push_back(n);
+
+      if (n) {
+        ::std::cout << j << ": " << offsets[j] << " "
+                    << static_cast<char>(msa[j][i]) << "\n";
+      }
     }
   }
 
