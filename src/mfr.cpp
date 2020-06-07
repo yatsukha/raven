@@ -161,27 +161,21 @@ ConflictGraph& FragmentIntersection(ConflictGraph& cg) {
               << s << " removed vertices"
               << "\n";
 
-  ::biosoup::ProgressBar bar{static_cast<::std::uint32_t>(g.size()), 80u};
-  ::std::cerr << "[raven::diploid::FragmentIntersection] calculating optimal "
-                 "intersection "
-              << "[" << bar << "]";
+  ::std::cerr << "[raven::diploid::FragmentIntersection] candidate optimals: ";
 
   for (auto&& pair : g) {
     auto iter = tmp.insert(pair.first).first;
-    if (Optima(cg, tmp, mem, z, z[pair.first]) == s) {
+    auto ss = Optima(cg, tmp, mem, z, z[pair.first]);
+    if (ss == s) {
       d.insert(pair.first);
     }
+    ::std::cerr << ss << ", ";
     tmp.erase(iter);
-    if (++bar) {
-      ::std::cerr
-          << "\r"
-          << "[raven::diploid::FragmentIntersection] calculating optimal "
-             "intersection "
-          << "[" << bar << "]";
-    }
   }
 
   ::std::cerr << "\n";
+  ::std::cerr << "[raven::diploid::FragmentIntersection] deletion set size: "
+              << d.size() << "\n";
 
   ::std::for_each(
       d.begin(), d.end(),
