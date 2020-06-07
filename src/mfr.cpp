@@ -161,6 +161,9 @@ ConflictGraph& FragmentIntersection(ConflictGraph& cg) {
               << s << " removed vertices"
               << "\n";
 
+  ::std::cerr << "[raven::diploid::FragmentIntersection] second run optimal "
+              << Optima(cg, tmp, mem, z, 0) << "\n";
+
   ::std::cerr << "[raven::diploid::FragmentIntersection] candidate optimals: ";
 
   for (auto&& pair : g) {
