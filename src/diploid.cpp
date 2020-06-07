@@ -78,8 +78,8 @@ PercentageInfo ComputePercentages(
 
 DiploidSequences Partition(
     ::std::vector<::std::unique_ptr<::biosoup::Sequence>> const& sequences,
-    ::std::shared_ptr<::thread_pool::ThreadPool> thread_pool,
-    ::std::int8_t const m, ::std::int8_t const n, ::std::int8_t const g) {
+    ::std::shared_ptr<::thread_pool::ThreadPool>, ::std::int8_t const m,
+    ::std::int8_t const n, ::std::int8_t const g) {
   auto alignment_engine = ::spoa::createAlignmentEngine(
       static_cast<::spoa::AlignmentType>(0), m, n, g);
 
@@ -139,7 +139,7 @@ DiploidSequences Partition(
     for (decltype(i) j = 0; j < msa.size(); ++j) {
       auto n = msa[j][i] == info.primary
                    ? 1
-                   : (msa[j][i] == info.secondary ? -1 : 0);
+                   : (msa[j][i] == info.secondary ? -1 : 2);
 
       snp_m[j].push_back(n);
 
