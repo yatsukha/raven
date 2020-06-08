@@ -153,7 +153,7 @@ DiploidSequences Partition(
   ::std::cerr << "[raven::diploid::Partition] built SNP matrix"
               << "\n";
 
-  ConflictGraph conflict_graph;
+  ConflictGraph conflict_graph{sequences.size()};
 
   ::biosoup::ProgressBar graph_bar{static_cast<::std::uint32_t>(snp_m.size()),
                                    80ul};

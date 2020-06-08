@@ -47,8 +47,11 @@ class ConflictGraph {
   using Neighbours = ::std::unordered_set<Node>;
   using Graph = ::std::unordered_map<Node, Neighbours>;
 
-  ConflictGraph() = default;
-  ConflictGraph(Graph&& g) : g(::std::forward<Graph>(g)) {}
+  ::std::size_t const max_size;
+
+  ConflictGraph(::std::size_t const max_size) : max_size(max_size) {}
+  ConflictGraph(Graph&& g, ::std::size_t const max_size)
+      : max_size(max_size), g(::std::forward<Graph>(g)) {}
 
   Graph const& graph() const noexcept { return g; }
 

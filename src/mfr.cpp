@@ -27,10 +27,11 @@ ZobristArray GenZobrist(::std::size_t const sz) {
 
 ZobristArray::value_type CalcHash(ZobristArray const& z,
                                   ConflictGraph::Removed const& r) noexcept {
-  return ::std::accumulate(r.begin(), r.end(), 0,
-                           [&z](HashType const total, HashType const current) {
-                             return total ^ z[current];
-                           });
+  return ::std::accumulate(
+      r.begin(), r.end(), 0,
+      [&z](HashType const total, ConflictGraph::Node const current) {
+        return total ^ z[current];
+      });
 }
 
 using RemovedMem = ::std::unordered_map<
@@ -92,7 +93,7 @@ ConflictGraph::OptionalCycle ConflictGraph::OddCycle(Removed const& r) const {
   ::std::unordered_map<
       detail::HashType,
       ::std::vector<::std::pair<Removed, OptionalCycle>>> static mem;
-  detail::ZobristArray static z = detail::GenZobrist(g.size());
+  detail::ZobristArray static z = detail::GenZobrist(max_size);
 
   auto hash = detail::CalcHash(z, r);
 
@@ -151,7 +152,7 @@ ConflictGraph& FragmentIntersection(ConflictGraph& cg) {
   auto& g = cg.graph();
   ConflictGraph::Removed d, tmp;
 
-  detail::ZobristArray z = detail::GenZobrist(g.size());
+  detail::ZobristArray z = detail::GenZobrist(cg.max_size);
   detail::RemovedMem mem;
 
   auto s = Optima(cg, tmp, mem, z, 0);
