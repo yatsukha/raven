@@ -137,7 +137,7 @@ ConflictGraph::OptionalCycle ConflictGraph::OddCycle(Removed const& r) const {
       }
       auto n = b;
       for (auto&& node : *cycle_opt) {
-        auto loc = r.insert(node).second;
+        auto loc = r.insert(node).first;
         n = ::std::min(n, Optima(g, r, mem, z, hash ^ z[node], b));
         r.erase(loc);
       }

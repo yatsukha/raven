@@ -143,7 +143,7 @@ DiploidSequences Partition(
 
       snp_m[j].push_back(n);
 
-      if (n) {
+      if (n != 2) {
         ::std::cout << j << ": " << offsets[j] << " "
                     << static_cast<char>(msa[j][i]) << "\n";
       }
