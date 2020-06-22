@@ -90,7 +90,7 @@ ConflictGraph::OptionalCycle ConflictGraph::OddCycleImpl(
 ConflictGraph::OptionalCycle ConflictGraph::OddCycle(Removed const& r) const {
   VisitedDephts v;
 
-  ::std::unordered_map<
+  /*::std::unordered_map<
       detail::HashType,
       ::std::vector<::std::pair<Removed, OptionalCycle>>> static mem;
   detail::ZobristArray static z = detail::GenZobrist(max_size);
@@ -103,27 +103,35 @@ ConflictGraph::OptionalCycle ConflictGraph::OddCycle(Removed const& r) const {
         return m.second;
       }
     }
-  }
+  }*/
 
   for (auto&& pair : g) {
     if (!r.count(pair.first) && !v.count(pair.first)) {
       auto ret = OddCycleImpl(v, r, {}, pair.first);
       if (ret) {
-        mem[hash].emplace_back(r, ret);
+        // mem[hash].emplace_back(r, ret);
         return ret;
       }
     }
   }
 
-  mem[hash].emplace_back(r, OptionalCycle{});
+  // mem[hash].emplace_back(r, OptionalCycle{});
   return {};
 }
+
+template <typename T>
+class XD {
+ public:
+  T const c;
+  XD(T c) : c(c) { ::std::cerr << "enter: " << c << "\n"; }
+  ~XD() { ::std::cerr << "exit: " << c << "\n"; }
+};
 
 ::std::size_t Optima(
     ConflictGraph const& g, ConflictGraph::Removed& r, detail::RemovedMem& mem,
     detail::ZobristArray const& z, detail::HashType hash,
     ::std::size_t b = ::std::numeric_limits<::std::size_t>::max()) {
-  if (r.size() >= b) {
+  if (r.size() >= b || r.size() == g.graph().size()) {
     return ::std::numeric_limits<decltype(b)>::max();
   } else {
     auto cycle_opt = g.OddCycle(r);
@@ -137,9 +145,11 @@ ConflictGraph::OptionalCycle ConflictGraph::OddCycle(Removed const& r) const {
       }
       auto n = b;
       for (auto&& node : *cycle_opt) {
-        auto loc = r.insert(node).first;
+        assert(!r.count(node));
+        auto loc = r.insert(node);
+        assert(loc.second);
         n = ::std::min(n, Optima(g, r, mem, z, hash ^ z[node], b));
-        r.erase(loc);
+        r.erase(loc.first);
       }
       mem[hash].emplace_back(r, n);
       return n;

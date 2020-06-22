@@ -69,8 +69,6 @@ PercentageInfo ComputePercentages(
   pi.primary_p = static_cast<float>(primary.first) / pi.depth;
   pi.secondary_p = static_cast<float>(secondary.first) / pi.depth;
 
-  pi.err_p = 1.0f - pi.primary_p - pi.secondary_p;
-
   return pi;
 }
 
@@ -115,8 +113,8 @@ DiploidSequences Partition(
   };
 
   auto const min_depth = 5;
-  auto const max_err = 0.1f;
-  auto const min_secondary = 0.3f;
+  auto const min_primary = 0.48f;
+  auto const min_secondary = 0.28f;
 
   // TODO: grouping columns into batches and then using thread pool
 
@@ -125,13 +123,15 @@ DiploidSequences Partition(
   for (::std::uint_fast32_t i = 0; i < msa.front().size(); ++i) {
     for (decltype(i) j = 0; j < msa.size(); ++j) {
       ++base_count[msa[j][i]];
-      if (msa[j][i] != '-') ++offsets[j];
+      if (msa[j][i] != '-') {
+        ++offsets[j];
+      }
     }
 
     auto info = detail::ComputePercentages(base_count);
     clear_base_count();
 
-    if (info.depth < min_depth || info.err_p > max_err ||
+    if (info.depth < min_depth || info.primary_p < min_primary ||
         info.secondary_p < min_secondary) {
       continue;
     }
@@ -144,7 +144,7 @@ DiploidSequences Partition(
       snp_m[j].push_back(n);
 
       if (n != 2) {
-        ::std::cout << j << ": " << offsets[j] << " "
+        ::std::cout << j << ": " << i << " " << offsets[j] << " "
                     << static_cast<char>(msa[j][i]) << "\n";
       }
     }
@@ -181,6 +181,8 @@ DiploidSequences Partition(
   }
 
   ::std::cerr << "\n";
+  ::std::cerr << "[raven::diploid::Partition] fragment conflict graph size: "
+              << conflict_graph.graph().size() << "\n";
 
   msa.clear();
   msa.shrink_to_fit();
@@ -188,13 +190,25 @@ DiploidSequences Partition(
   snp_m.clear();
   snp_m.shrink_to_fit();
 
-  auto old = conflict_graph.graph().size();
-  auto reduced = FragmentIntersection(conflict_graph).graph().size();
+  auto old_size = conflict_graph.graph().size();
+  auto reduced_graph = FragmentIntersection(conflict_graph);
 
-  ::std::cerr << "Regular graph size: " << old << ", reduced: " << reduced
-              << "\n";
+  ::std::cerr << "Regular graph size: " << old_size
+              << ", reduced: " << reduced_graph.graph().size() << "\n";
 
-  return {};
+  auto const& gr = reduced_graph.graph();
+  DiploidSequences ds;
+
+  for (::std::size_t i = 0; i < sequences.size(); ++i) {
+    if (!gr.count(i)) {
+      ds.first.push_back(::std::unique_ptr<::biosoup::Sequence>(
+          new ::biosoup::Sequence{*sequences[i]}));
+      ds.second.push_back(::std::unique_ptr<::biosoup::Sequence>(
+          new ::biosoup::Sequence{*sequences[i]}));
+    }
+  }
+
+  return ds;
 }
 
 }  // namespace diploid
